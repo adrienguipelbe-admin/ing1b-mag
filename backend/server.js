@@ -11,7 +11,7 @@ app.use(cors({
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000',
-    'https://creative-cajeta-bef7ac.netlify.app',
+    'https://ing1b-magazine.netlify.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
