@@ -1200,9 +1200,8 @@ async function uploadMedia(file) {
     } else if (d.mimetype && d.mimetype.startsWith('audio/')) {
       html = '<figure style="margin:20px 0"><p style="font-size:14px;font-weight:600;margin-bottom:8px">🎵 ' + d.original_name + '</p><audio controls style="width:100%" src="' + d.url + '"></audio></figure>';
     } else {
-      const dlUrl = d.download_url || d.url;
       const ext = d.original_name.split('.').pop().toUpperCase();
-      html = '<div style="margin:16px 0;padding:16px 18px;background:#EFF6FF;border-left:4px solid #E63946;border-radius:0 8px 8px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:28px">📄</span><div style="flex:1;min-width:120px"><div style="font-weight:600;font-size:14px;color:#1A1A2E">' + d.original_name + '</div><div style="font-size:12px;color:#6B7280;margin-top:2px">' + Math.round(d.size/1024) + ' Ko · ' + ext + '</div></div><a href="' + dlUrl + '" target="_blank" download="' + d.original_name + '" style="background:#E63946;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin-top:4px">📥 Télécharger</a></div>';
+      html = '<div style="margin:16px 0;padding:16px 18px;background:#EFF6FF;border-left:4px solid #E63946;border-radius:0 8px 8px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:28px">📄</span><div style="flex:1;min-width:120px"><div style="font-weight:600;font-size:14px;color:#1A1A2E">' + d.original_name + '</div><div style="font-size:12px;color:#6B7280;margin-top:2px">' + Math.round(d.size/1024) + ' Ko · ' + ext + '</div></div><button onclick="downloadFile(\'' + d.url + '\',\'' + d.original_name + '\')" style="background:#E63946;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin-top:4px">📥 Télécharger</button></div>';
     }
     const bodyEl = document.getElementById('f-body');
     bodyEl.value += '\n' + html;
@@ -1366,6 +1365,27 @@ window.addEventListener('load', () => {
   setTimeout(initGoogle, 1500);
   loadArticles(); loadAgenda(); loadPoll(); loadFlash(); observeFade();
 });
+
+/* ── DOWNLOAD FILE ── */
+async function downloadFile(url, filename) {
+  try {
+    toast('Téléchargement en cours...', 'info');
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(blobUrl);
+    toast('Téléchargement terminé !', 'success');
+  } catch(e) {
+    toast('Erreur téléchargement', 'error');
+    window.open(url, '_blank');
+  }
+}
 </script>
 </body>
 </html>

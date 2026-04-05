@@ -38,11 +38,6 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       use_filename: true,
       unique_filename: true,
     };
-    // For raw files (PDF, Word etc), preserve the original filename with extension
-    if (resourceType === 'raw') {
-      uploadOpts.public_id = folder + '/' + Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-      uploadOpts.use_filename = false;
-    }
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(uploadOpts,
@@ -51,16 +46,8 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       stream.end(req.file.buffer);
     });
 
-    // For raw files, build a proper download URL with original filename
-    let downloadUrl = result.secure_url;
-    if (resourceType === 'raw') {
-      // Add fl_attachment flag to force download with original filename
-      downloadUrl = result.secure_url.replace('/upload/', '/upload/fl_attachment:' + req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_') + '/');
-    }
-
     res.json({
       url: result.secure_url,
-      download_url: downloadUrl,
       public_id: result.public_id,
       resource_type: resourceType,
       format: result.format,
