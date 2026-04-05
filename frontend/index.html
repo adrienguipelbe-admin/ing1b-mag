@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ING1B Mag — Institut Saint Jean Ingénieur</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%23E8173A'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' dominant-baseline='auto' font-family='serif' fill='white' font-weight='bold'>IB</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Manrope:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +14,7 @@ html{scroll-behavior:smooth}
   --rouge:#E8173A;--or:#F5A623;--bleu:#1A2E6E;--cyan:#00C2CB;
   --noir:#0D0D0D;--gris:#888;--gris-cl:#F4F3EF;--blanc:#FAFAF8;
   --serif:'Playfair Display',Georgia,serif;
-  --sans:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --sans:'Manrope',sans-serif;--mono:'DM Mono',monospace;
 }
 body{font-family:var(--sans);background:var(--blanc);color:var(--noir);font-size:16px;line-height:1.6;overflow-x:hidden}
 
@@ -273,6 +273,20 @@ footer{background:var(--noir);color:rgba(255,255,255,.6);margin-top:50px}
 .footer-col ul li a{font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;transition:color .2s}
 .footer-col ul li a:hover{color:var(--rouge)}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding:14px 32px;max-width:1200px;margin:0 auto;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.25)}
+
+
+/* POLL RADIO */
+.poll-option{margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;transition:all .2s}
+.poll-option:hover{border-color:var(--rouge);background:#fff8f8}
+.poll-option.voted{border-color:var(--rouge);background:#fff0f2}
+.poll-radio{width:18px;height:18px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.poll-option.voted .poll-radio{border-color:var(--rouge);background:var(--rouge)}
+.poll-radio-dot{width:8px;height:8px;border-radius:50%;background:#fff;display:none}
+.poll-option.voted .poll-radio-dot{display:block}
+.poll-opt-content{flex:1}
+.poll-opt-label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:5px}
+.poll-bar-track{height:5px;background:#eee;overflow:hidden;border-radius:3px}
+.poll-bar-fill{height:100%;transition:width .8s cubic-bezier(.4,0,.2,1)}
 
 /* UTILS */
 .loading{display:flex;align-items:center;justify-content:center;padding:40px;flex-direction:column;gap:10px;color:var(--gris)}
@@ -660,6 +674,9 @@ footer{background:var(--noir);color:rgba(255,255,255,.6);margin-top:50px}
     <div class="section-header fade-in"><div class="section-title"><span class="dot" style="background:var(--rouge)"></span>L'équipe éditoriale</div></div>
     <div class="team-grid">
       <div class="team-card fade-in"><div class="team-avatar" style="background:var(--bleu)">AG</div><div class="team-name">Adrien Guipelbe</div><div class="team-role">Rédacteur en chef</div></div>
+      <div class="team-card fade-in"><div class="team-avatar" style="background:var(--rouge)">MK</div><div class="team-name">Marie Kamga</div><div class="team-role">Cours & Projets</div></div>
+      <div class="team-card fade-in"><div class="team-avatar" style="background:var(--or);color:var(--noir)">SO</div><div class="team-name">Samuel Ongolo</div><div class="team-role">Sports & Loisirs</div></div>
+      <div class="team-card fade-in"><div class="team-avatar" style="background:var(--cyan);color:var(--noir)">JN</div><div class="team-name">Jean-Paul Nkomo</div><div class="team-role">Vie de classe</div></div>
     </div>
   </section>
 </main>
@@ -921,20 +938,26 @@ async function loadAgenda() {
 async function loadPoll() {
   try {
     const data = await api('/poll');
-    renderPoll(data);
+    renderPoll(data, null);
   } catch(e) { document.getElementById('poll-opts').innerHTML = '<div class="empty-state">Sondage indisponible</div>' }
 }
 
-function renderPoll(data) {
+let userVotedOption = null;
+function renderPoll(data, votedId) {
   const colors = ['var(--rouge)','var(--bleu)','var(--cyan)','var(--or)'];
   if (!data.question) { document.getElementById('poll-q').textContent = 'Aucun sondage actif'; return; }
   document.getElementById('poll-q').textContent = data.question;
   const total = data.total || 1;
+  if (votedId) userVotedOption = votedId;
   document.getElementById('poll-opts').innerHTML = data.options.map((opt,i) => {
     const pct = Math.round(opt.votes / total * 100);
-    return '<div class="poll-option" onclick="vote(' + opt.id + ')">' +
+    const isVoted = userVotedOption === opt.id;
+    return '<div class="poll-option' + (isVoted?' voted':'') + '" onclick="vote(' + opt.id + ')">' +
+      '<div class="poll-radio"><div class="poll-radio-dot"></div></div>' +
+      '<div class="poll-opt-content">' +
       '<div class="poll-opt-label"><span>' + opt.label + '</span><span>' + pct + '%</span></div>' +
-      '<div class="poll-bar-track"><div class="poll-bar-fill" style="width:' + pct + '%;background:' + colors[i%colors.length] + '"></div></div></div>';
+      '<div class="poll-bar-track"><div class="poll-bar-fill" style="width:' + pct + '%;background:' + colors[i%colors.length] + '"></div></div>' +
+      '</div></div>';
   }).join('');
   document.getElementById('poll-total').textContent = data.total + ' votes';
   if (!currentUser) document.getElementById('poll-note').style.display = 'block';
@@ -943,9 +966,10 @@ function renderPoll(data) {
 
 async function vote(optId) {
   if (!currentUser) { toast('Connecte-toi pour voter','info'); openAuth(); return; }
+  if (userVotedOption) { toast('Tu as déjà voté !','info'); return; }
   try {
     const data = await api('/poll/' + optId + '/vote', {method:'POST'});
-    renderPoll(data); toast('Vote enregistré !','success');
+    renderPoll(data, optId); toast('Vote enregistré !','success');
   } catch(e) { toast(e.message,'error'); }
 }
 
