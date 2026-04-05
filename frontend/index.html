@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"><!-- v2.1 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ING1B Mag — Institut Saint Jean Ingénieur</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1477,8 +1477,7 @@ async function uploadMedia(file) {
 
     // Insérer dans le corps de l'article
     const bodyEl = document.getElementById('f-body');
-    bodyEl.value += '
-' + html;
+    bodyEl.value += '\n' + html;
 
     // Afficher dans la liste des médias insérés
     const attachment = { url: data.url, type: data.resource_type, name: data.original_name, html, icon };
