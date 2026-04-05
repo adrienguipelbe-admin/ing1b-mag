@@ -7,6 +7,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'ing1bmag.db'), (err) => {
 });
 
 db.serialize(() => {
+
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT NOT NULL,
@@ -30,16 +31,26 @@ db.serialize(() => {
     status       TEXT DEFAULT 'draft',
     cover_emoji  TEXT DEFAULT '📰',
     cover_color  TEXT DEFAULT '#1A2E6E',
+    cover_image  TEXT,
     views        INTEGER DEFAULT 0,
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(author_id) REFERENCES users(id)
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS polls (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    question  TEXT NOT NULL,
+    active    INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS poll_options (
-    id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    label   TEXT NOT NULL,
-    votes   INTEGER DEFAULT 0
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id  INTEGER NOT NULL,
+    label    TEXT NOT NULL,
+    votes    INTEGER DEFAULT 0,
+    FOREIGN KEY(poll_id) REFERENCES polls(id)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS poll_voters (
@@ -59,22 +70,50 @@ db.serialize(() => {
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Données initiales du sondage
-  db.get('SELECT COUNT(*) as c FROM poll_options', (_, row) => {
+  db.run(`CREATE TABLE IF NOT EXISTS flash_info (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    text     TEXT NOT NULL,
+    emoji    TEXT DEFAULT '📌',
+    position INTEGER DEFAULT 0
+  )`);
+
+  // Sondage initial
+  db.get('SELECT COUNT(*) as c FROM polls', (_, row) => {
     if (row && row.c === 0) {
-      const opts = [
-        ['Algèbre linéaire', 42],
-        ['Mécatronique', 31],
-        ['Réflexion Humaine', 18],
-        ["Aucun, on gère 💪", 9]
+      db.run('INSERT INTO polls (question, active) VALUES (?,1)',
+        ['Le cours le plus redouté d\'ING1B ?'], function() {
+          const pollId = this.lastID;
+          const opts = [
+            ['Algèbre linéaire', 42],
+            ['Mécatronique', 31],
+            ['Réflexion Humaine', 18],
+            ['Aucun, on gère 💪', 9]
+          ];
+          opts.forEach(([label, votes]) => {
+            db.run('INSERT INTO poll_options (poll_id,label,votes) VALUES (?,?,?)', [pollId, label, votes]);
+          });
+        }
+      );
+    }
+  });
+
+  // Flash info initial
+  db.get('SELECT COUNT(*) as c FROM flash_info', (_, row) => {
+    if (row && row.c === 0) {
+      const items = [
+        ['Partiels d\'Algèbre linéaire : le 12 avril, Salle B2', '📌'],
+        ['Tournoi inter-promos de foot : ING1B en demi-finale !', '🏆'],
+        ['Soutenances du projet Thermostat Autonome : 18 avril', '📢'],
+        ['Stage académique 2026 : les candidatures sont ouvertes', '🎓'],
+        ['Soirée de promo ING1B : 25 avril au campus Saint Jean', '🎉'],
       ];
-      opts.forEach(([label, votes]) => {
-        db.run('INSERT INTO poll_options (label, votes) VALUES (?,?)', [label, votes]);
+      items.forEach(([text, emoji]) => {
+        db.run('INSERT INTO flash_info (text,emoji) VALUES (?,?)', [text, emoji]);
       });
     }
   });
 
-  // Données initiales de l'agenda
+  // Agenda initial
   db.get('SELECT COUNT(*) as c FROM agenda', (_, row) => {
     if (row && row.c === 0) {
       const events = [
@@ -90,6 +129,7 @@ db.serialize(() => {
       });
     }
   });
+
 });
 
 module.exports = db;
