@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
-const path    = require('path');
 
 const app = express();
 
@@ -30,6 +29,7 @@ app.use((req, _, next) => {
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/articles', require('./routes/articles'));
 app.use('/api',          require('./routes/misc'));
+app.use('/api',          require('./routes/upload'));
 
 // ── SANTÉ ─────────────────────────────────────────────────────
 app.get('/api/health', (_, res) => {
@@ -57,6 +57,7 @@ app.listen(PORT, () => {
   console.log('');
   console.log(`  ✅  Backend démarré sur http://localhost:${PORT}`);
   console.log(`  📁  Base de données : ing1bmag.db`);
+  console.log(`  ☁️   Cloudinary      : ${process.env.CLOUDINARY_CLOUD_NAME || '(non configuré)'}`);
   console.log(`  🔑  Admin email     : ${process.env.ADMIN_EMAIL || '(non défini)'}`);
   console.log('');
 });
