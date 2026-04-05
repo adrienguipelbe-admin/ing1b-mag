@@ -76,11 +76,12 @@ router.post('/poll', auth, (req, res) => {
 router.post('/poll/:optionId/vote', auth, (req, res) => {
   const userId = req.user.id;
   const optionId = parseInt(req.params.optionId);
-  db.get('SELECT * FROM poll_voters WHERE user_id=?', [userId], (_, existing) => {
-    if (existing) return res.status(409).json({ error: 'Tu as déjà voté' });
+  const previousId = req.body && req.body.previous ? parseInt(req.body.previous) : null;
+
+  const doVote = () => {
     db.run('UPDATE poll_options SET votes=votes+1 WHERE id=?', [optionId], (err) => {
       if (err) return res.status(500).json({ error: err.message });
-      db.run('INSERT INTO poll_voters (user_id,option_id) VALUES (?,?)', [userId, optionId], () => {
+      db.run('INSERT OR REPLACE INTO poll_voters (user_id,option_id) VALUES (?,?)', [userId, optionId], () => {
         db.get('SELECT poll_id FROM poll_options WHERE id=?', [optionId], (_, opt) => {
           db.all('SELECT * FROM poll_options WHERE poll_id=? ORDER BY id', [opt.poll_id], (_, rows) => {
             const total = rows.reduce((s, r) => s + r.votes, 0);
@@ -89,7 +90,16 @@ router.post('/poll/:optionId/vote', auth, (req, res) => {
         });
       });
     });
-  });
+  };
+
+  if (previousId) {
+    // Annuler le vote précédent
+    db.run('UPDATE poll_options SET votes=MAX(0,votes-1) WHERE id=?', [previousId], () => {
+      doVote();
+    });
+  } else {
+    doVote();
+  }
 });
 
 // ── FLASH INFO ────────────────────────────────────────────────

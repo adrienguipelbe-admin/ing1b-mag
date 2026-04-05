@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ING1B Mag — Institut Saint Jean Ingénieur</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%23E8173A'/><text y='.9em' font-size='70' x='50%' text-anchor='middle' dominant-baseline='auto' font-family='serif' fill='white' font-weight='bold'>IB</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Manrope:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +14,7 @@ html{scroll-behavior:smooth}
   --rouge:#E8173A;--or:#F5A623;--bleu:#1A2E6E;--cyan:#00C2CB;
   --noir:#0D0D0D;--gris:#888;--gris-cl:#F4F3EF;--blanc:#FAFAF8;
   --serif:'Playfair Display',Georgia,serif;
-  --sans:'Manrope',sans-serif;--mono:'DM Mono',monospace;
+  --sans:'Calibri Light','Calibri',sans-serif;--mono:'DM Mono',monospace;
 }
 body{font-family:var(--sans);background:var(--blanc);color:var(--noir);font-size:16px;line-height:1.6;overflow-x:hidden}
 
@@ -276,13 +276,14 @@ footer{background:var(--noir);color:rgba(255,255,255,.6);margin-top:50px}
 
 
 /* POLL RADIO */
-.poll-option{margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;transition:all .2s}
+.poll-option{margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;transition:all .2s;user-select:none}
 .poll-option:hover{border-color:var(--rouge);background:#fff8f8}
 .poll-option.voted{border-color:var(--rouge);background:#fff0f2}
-.poll-radio{width:18px;height:18px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.poll-radio{width:20px;height:20px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;background:#fff}
+.poll-option:hover .poll-radio{border-color:var(--rouge)}
 .poll-option.voted .poll-radio{border-color:var(--rouge);background:var(--rouge)}
-.poll-radio-dot{width:8px;height:8px;border-radius:50%;background:#fff;display:none}
-.poll-option.voted .poll-radio-dot{display:block}
+.poll-radio-dot{width:8px;height:8px;border-radius:50%;background:#fff;opacity:0;transition:opacity .2s}
+.poll-option.voted .poll-radio-dot{opacity:1}
 .poll-opt-content{flex:1}
 .poll-opt-label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:5px}
 .poll-bar-track{height:5px;background:#eee;overflow:hidden;border-radius:3px}
@@ -966,9 +967,10 @@ function renderPoll(data, votedId) {
 
 async function vote(optId) {
   if (!currentUser) { toast('Connecte-toi pour voter','info'); openAuth(); return; }
-  if (userVotedOption) { toast('Tu as déjà voté !','info'); return; }
+  if (userVotedOption === optId) return;
   try {
-    const data = await api('/poll/' + optId + '/vote', {method:'POST'});
+    const data = await api('/poll/' + optId + '/vote', {method:'POST', body:JSON.stringify({previous: userVotedOption})});
+    userVotedOption = optId;
     renderPoll(data, optId); toast('Vote enregistré !','success');
   } catch(e) { toast(e.message,'error'); }
 }
