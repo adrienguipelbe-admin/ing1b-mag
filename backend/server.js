@@ -10,7 +10,7 @@ app.use(cors({
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000',
-    'https://ing1b-magazine.netlify.app',
+    'https://adrienguipelbe-admin.github.io',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
