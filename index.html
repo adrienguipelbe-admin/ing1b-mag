@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ING1B Mag — Institut Saint Jean Ingénieur</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23E63946'/><text y='72' x='50' text-anchor='middle' font-family='Georgia,serif' fill='white' font-weight='bold' font-size='52'>IB</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --r:#E63946;--r2:#c1121f;--b:#0077B6;--b2:#023E8A;--b3:#90E0EF;
   --noir:#0a0a0f;--gris:#64748B;--gris2:#94A3B8;--bg:#F0F4FF;--blanc:#FFFFFF;
-  --serif:'Syne',sans-serif;--sans:'Inter',sans-serif;
+  --serif:'Nunito',sans-serif;--sans:'Nunito',sans-serif;
   --shadow:0 2px 20px rgba(0,0,0,.08);--shadow2:0 8px 40px rgba(0,0,0,.12);
 }
 html,body{height:100%;overflow:hidden}
@@ -417,6 +417,7 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
       <button class="anav-btn" onclick="atab('agenda',this)">Agenda</button>
       <button class="anav-btn" onclick="atab('poll',this)">Sondage</button>
       <button class="anav-btn" onclick="atab('flash',this)">Flash Info</button>
+      <button class="anav-btn" onclick="atab('rubriques',this)">Rubriques</button>
       <button class="anav-btn" onclick="atab('users',this)">Membres</button>
     </div>
     <button class="aclose" onclick="closeAdmin()">← Retour</button>
@@ -551,6 +552,19 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
       </div>
       <div class="acard"><h3>Messages actuels</h3><div id="flash-list"></div></div>
     </div>
+    <div class="asec" id="sec-rubriques">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:800;color:#fff;margin-bottom:16px">Rubriques</div>
+      <div class="acard"><h3>Ajouter une rubrique</h3>
+        <div class="frow">
+          <div><label class="alabel">Nom de la rubrique *</label><input class="ainput" id="rub-label" placeholder="ex: Humour & Détente"></div>
+          <div><label class="alabel">Slug (identifiant) *</label><input class="ainput" id="rub-slug" placeholder="ex: humour"></div>
+        </div>
+        <div style="margin-top:10px"><label class="alabel">Couleur</label><input type="color" class="ainput" id="rub-color" value="#0077B6" style="height:40px;padding:3px 6px;cursor:pointer"></div>
+        <button class="abtn p" style="margin-top:12px" onclick="addRubrique()">Ajouter la rubrique</button>
+      </div>
+      <div class="acard"><h3>Rubriques actuelles</h3><div id="rubriques-list"></div></div>
+    </div>
+
     <div class="asec" id="sec-users">
       <div style="font-family:var(--serif);font-size:18px;font-weight:800;color:#fff;margin-bottom:16px">Membres</div>
       <div class="acard" style="padding:0;overflow:hidden">
@@ -706,8 +720,7 @@ function fmtShort(s) {
   const d = new Date(s);
   return {day:d.getDate(), month:d.toLocaleDateString('fr-FR',{month:'short'}).replace('.','')}
 }
-function rubLabel(r) { return {cours:'Cours & Projets',vie:'Vie de classe',talents:'Talents',sport:'Sports & Loisirs',philo:'Réflexion Humaine'}[r]||r }
-function rubColor(r) { return {cours:'#F4A261',vie:'#48CAE4',talents:'#c084fc',sport:'#4ade80',philo:'#a78bfa'}[r]||'#888' }
+
 
 /* AUTH */
 function openAuth() { document.getElementById('auth-modal').classList.add('open') }
@@ -888,6 +901,39 @@ function saveHeroSelection() {
 }
 
 /* ARTICLES */
+let globalRubriques = [
+  {label:'Cours & Projets', slug:'cours', color:'#F4A261'},
+  {label:'Vie de classe', slug:'vie', color:'#48CAE4'},
+  {label:'Talents', slug:'talents', color:'#c084fc'},
+  {label:'Sports & Loisirs', slug:'sport', color:'#4ade80'},
+  {label:'Réflexion Humaine', slug:'philo', color:'#a78bfa'},
+];
+
+async function loadRubriques() {
+  try {
+    const rubs = await api('/rubriques');
+    if (rubs.length) globalRubriques = rubs.map(r => ({label:r.label, slug:r.slug, color:r.color}));
+    // Update nav
+    const nav = document.getElementById('sitenav');
+    const staticLinks = nav.querySelectorAll('a:first-child, a:last-child');
+    // Update article form select
+    const sel = document.getElementById('f-rubrique');
+    if (sel) {
+      sel.innerHTML = '<option value="">-- Choisir --</option>' +
+        globalRubriques.map(r => '<option value="'+r.slug+'">'+r.label+'</option>').join('');
+    }
+  } catch(e) {}
+}
+
+function rubLabel(r) {
+  const found = globalRubriques.find(x => x.slug === r);
+  return found ? found.label : r;
+}
+function rubColor(r) {
+  const found = globalRubriques.find(x => x.slug === r);
+  return found ? found.color : '#888';
+}
+
 async function loadArticles(rubrique=null) {
   const grid = document.getElementById('articles-grid');
   grid.innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spin"></div><span>Chargement...</span></div>';
@@ -971,11 +1017,23 @@ function renderPoll(data, votedId) {
   document.getElementById('poll-opts').innerHTML = data.options.map((opt,i) => {
     const pct = Math.round(opt.votes / total * 100);
     const isVoted = userVotedOption === opt.id;
-    return '<div class="popt' + (isVoted?' voted':'') + '" onclick="vote(' + opt.id + ')">' +
-      '<div class="pradio"><div class="pdot"></div></div>' +
-      '<div class="pcontent">' +
-      '<div class="plabel"><span>' + opt.label + '</span><span>' + pct + '%</span></div>' +
-      '<div class="ptrack"><div class="pfill" style="width:' + pct + '%;background:' + colors[i%colors.length] + '"></div></div>' +
+    const radioStyle = isVoted
+      ? 'width:22px;height:22px;border-radius:50%;border:3px solid #E63946;background:#E63946;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s'
+      : 'width:22px;height:22px;border-radius:50%;border:3px solid #cbd5e1;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s';
+    const dotStyle = isVoted
+      ? 'width:9px;height:9px;border-radius:50%;background:#fff;display:block'
+      : 'display:none';
+    const optStyle = isVoted
+      ? 'display:flex;align-items:center;gap:10px;padding:12px 14px;border:2.5px solid #E63946;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff5f5;transition:all .2s'
+      : 'display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff;transition:all .2s';
+    return '<div style="' + optStyle + '" onclick="vote(' + opt.id + ')">' +
+      '<div style="' + radioStyle + '"><div style="' + dotStyle + '"></div></div>' +
+      '<div style="flex:1">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
+      '<span style="font-size:14px;font-weight:600;color:#1e3a5f">' + opt.label + '</span>' +
+      '<span style="font-size:14px;font-weight:800;color:' + colors[i%colors.length] + ';min-width:40px;text-align:right">' + pct + '%</span>' +
+      '</div>' +
+      '<div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + colors[i%colors.length] + ';border-radius:3px;transition:width .8s ease"></div></div>' +
       '</div></div>';
   }).join('');
   document.getElementById('poll-total').textContent = data.total + ' votes';
@@ -1023,7 +1081,7 @@ function openAdmin() {
 }
 function closeAdmin() { document.getElementById('admin').style.display = 'none'; loadArticles(); }
 
-const smap = {dashboard:'sec-dashboard',articles:'sec-articles','new-article':'sec-new-article',agenda:'sec-agenda',poll:'sec-poll',flash:'sec-flash',users:'sec-users'};
+const smap = {dashboard:'sec-dashboard',articles:'sec-articles','new-article':'sec-new-article',agenda:'sec-agenda',poll:'sec-poll',flash:'sec-flash',rubriques:'sec-rubriques',users:'sec-users'};
 function atab(name, btn) {
   document.querySelectorAll('.asec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('active'));
@@ -1034,6 +1092,7 @@ function atab(name, btn) {
   else if (name==='agenda') loadAdminAgenda();
   else if (name==='poll') loadAdminPoll();
   else if (name==='flash') loadAdminFlash();
+  else if (name==='rubriques') loadAdminRubriques();
   else if (name==='users') loadAdminUsers();
 }
 
@@ -1309,6 +1368,47 @@ async function changeRole(id, role) {
   catch(e) { toast(e.message,'error'); }
 }
 
+/* RUBRIQUES ADMIN */
+async function loadAdminRubriques() {
+  try {
+    const rubs = await api('/rubriques');
+    document.getElementById('rubriques-list').innerHTML = rubs.length
+      ? rubs.map(r =>
+          '<div class="fitem">' +
+          '<div style="width:14px;height:14px;border-radius:50%;background:' + r.color + ';flex-shrink:0"></div>' +
+          '<span style="font-weight:600">' + r.label + '</span>' +
+          '<span style="font-size:11px;color:#334155;font-family:monospace">' + r.slug + '</span>' +
+          '<button class="abtn d" style="padding:4px 8px;font-size:11px;margin-left:auto" onclick="delRubrique(' + r.id + ')">🗑️</button></div>'
+        ).join('')
+      : '<div style="color:#334155;font-size:13px">Aucune rubrique</div>';
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function addRubrique() {
+  const label = document.getElementById('rub-label').value.trim();
+  const slug = document.getElementById('rub-slug').value.trim();
+  const color = document.getElementById('rub-color').value;
+  if (!label || !slug) { toast('Nom et slug requis','error'); return; }
+  try {
+    await api('/rubriques', {method:'POST', body:JSON.stringify({label, slug, color})});
+    toast('Rubrique ajoutée !','success');
+    document.getElementById('rub-label').value = '';
+    document.getElementById('rub-slug').value = '';
+    loadAdminRubriques();
+    loadRubriques();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function delRubrique(id) {
+  if (!confirm('Supprimer cette rubrique ?')) return;
+  try {
+    await api('/rubriques/' + id, {method:'DELETE'});
+    toast('Rubrique supprimée','success');
+    loadAdminRubriques();
+    loadRubriques();
+  } catch(e) { toast(e.message,'error'); }
+}
+
 /* KEYBOARD */
 document.addEventListener('keydown', e => {
   if (e.key==='Escape') {
@@ -1325,7 +1425,7 @@ window.addEventListener('load', () => {
   const u = localStorage.getItem('ing1b_user');
   if (t && u) { currentToken=t; currentUser=JSON.parse(u); renderAuthArea(); }
   setTimeout(initGoogle, 1500);
-  loadArticles(); loadAgenda(); loadPoll(); loadFlash();
+  loadRubriques(); loadArticles(); loadAgenda(); loadPoll(); loadFlash();
 });
 </script>
 </body>

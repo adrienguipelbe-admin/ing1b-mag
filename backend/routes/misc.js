@@ -130,3 +130,33 @@ router.delete('/flash/:id', auth, (req, res) => {
 });
 
 module.exports = router;
+
+// ── RUBRIQUES ─────────────────────────────────────────────────
+
+router.get('/rubriques', (_, res) => {
+  db.all('SELECT * FROM rubriques ORDER BY position ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+router.post('/rubriques', auth, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Accès refusé' });
+  const { label, slug, color } = req.body;
+  if (!label || !slug) return res.status(400).json({ error: 'Label et slug requis' });
+  db.run('INSERT INTO rubriques (label, slug, color) VALUES (?,?,?)',
+    [label, slug.toLowerCase().replace(/\s+/g,'-'), color||'#0077B6'],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      db.get('SELECT * FROM rubriques WHERE id=?', [this.lastID], (_, row) => res.status(201).json(row));
+    }
+  );
+});
+
+router.delete('/rubriques/:id', auth, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Accès refusé' });
+  db.run('DELETE FROM rubriques WHERE id=?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});

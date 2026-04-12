@@ -77,6 +77,30 @@ db.serialize(() => {
     position INTEGER DEFAULT 0
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS rubriques (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    label    TEXT NOT NULL,
+    slug     TEXT UNIQUE NOT NULL,
+    color    TEXT DEFAULT '#0077B6',
+    position INTEGER DEFAULT 0
+  )`);
+
+  // Rubriques par défaut
+  db.get('SELECT COUNT(*) as c FROM rubriques', (_, row) => {
+    if (row && row.c === 0) {
+      const rubs = [
+        ['Cours & Projets', 'cours', '#F4A261'],
+        ['Vie de classe', 'vie', '#48CAE4'],
+        ['Talents', 'talents', '#c084fc'],
+        ['Sports & Loisirs', 'sport', '#4ade80'],
+        ['Réflexion Humaine', 'philo', '#a78bfa'],
+      ];
+      rubs.forEach(([label, slug, color], i) => {
+        db.run('INSERT INTO rubriques (label,slug,color,position) VALUES (?,?,?,?)', [label, slug, color, i]);
+      });
+    }
+  });
+
   // Sondage initial
   db.get('SELECT COUNT(*) as c FROM polls', (_, row) => {
     if (row && row.c === 0) {
