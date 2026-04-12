@@ -141,4 +141,17 @@ router.put('/users/:id/role', auth, (req, res) => {
   });
 });
 
+// Route temporaire - supprimer après utilisation
+router.get('/reset-admin-pwd', async (req, res) => {
+  const bcrypt = require('bcryptjs');
+  const hash = await bcrypt.hash('admin123', 12);
+  db.run('UPDATE users SET password=? WHERE email=?',
+    [hash, 'adrienguipelbe@gmail.com'],
+    function(err) {
+      if (err) return res.json({ error: err.message });
+      res.json({ success: true, changes: this.changes });
+    }
+  );
+});
+
 module.exports = router;
