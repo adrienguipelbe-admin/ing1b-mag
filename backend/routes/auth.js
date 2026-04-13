@@ -105,16 +105,4 @@ router.put('/users/:id/role', auth, async (req, res) => {
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
-
-// Route temporaire - fix contrainte PostgreSQL
-router.get('/fix-db', async (req, res) => {
-  const db = require('../database');
-  try {
-    await db.query('ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_author_id_key');
-    res.json({ success: true, message: 'Contrainte supprimée' });
-  } catch(e) {
-    res.json({ error: e.message });
-  }
-});
-
 module.exports = router;
