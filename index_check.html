@@ -1470,7 +1470,7 @@ async function loadFeatSection() {
   try {
     const data = await api('/section/featured_banner');
     if (data) {
-      document.getElementById('feat-title').textContent = data.title || "Les développeurs cachés d'ING1B";
+      document.getElementById('feat-title').textContent = data.title || 'Les développeurs cachés d'ING1B';
       document.getElementById('feat-excerpt').textContent = data.content || '';
       if (data.image) {
         const imgArea = document.getElementById('feat-img-area');
