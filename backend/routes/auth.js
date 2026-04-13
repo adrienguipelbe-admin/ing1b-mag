@@ -105,4 +105,18 @@ router.put('/users/:id/role', auth, async (req, res) => {
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
+// Route temporaire diagnostic
+router.get('/check-db', async (req, res) => {
+  const db = require('../database');
+  try {
+    const r = await db.query(`
+      SELECT constraint_name, constraint_type 
+      FROM information_schema.table_constraints 
+      WHERE table_name = 'articles'
+    `);
+    res.json(r.rows);
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
 module.exports = router;
