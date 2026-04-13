@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ING1B Mag — Institut Saint Jean Ingénieur</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23E63946'/><text y='72' x='50' text-anchor='middle' font-family='Georgia,serif' fill='white' font-weight='bold' font-size='52'>IB</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --r:#E63946;--r2:#c1121f;--b:#0077B6;--b2:#023E8A;--b3:#90E0EF;
   --noir:#0a0a0f;--gris:#64748B;--gris2:#94A3B8;--bg:#F0F4FF;--blanc:#FFFFFF;
-  --serif:'Nunito',sans-serif;--sans:'Nunito',sans-serif;
+  --serif:'Cambria','Georgia',serif;--sans:'Cambria','Georgia',serif;
   --shadow:0 2px 20px rgba(0,0,0,.08);--shadow2:0 8px 40px rgba(0,0,0,.12);
 }
 html,body{height:100%;overflow:hidden}
@@ -277,6 +277,11 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
 @keyframes sp{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:32px;color:var(--gris2);font-size:13px}
 
+
+/* PULL TO REFRESH */
+.ptr-indicator{display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;transition:height .2s;background:var(--bg);color:var(--gris);font-size:13px;gap:8px}
+.ptr-spin{width:18px;height:18px;border:2px solid #e2e8f0;border-top-color:var(--r);border-radius:50%;animation:sp .7s linear infinite}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .htop{padding:0 14px;height:50px}
@@ -375,6 +380,29 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
       <div class="rmeta" id="r-meta"></div>
     </div>
     <div class="rbody" id="r-body"></div>
+  </div>
+</div>
+
+<!-- FEATURED EDIT MODAL -->
+<div class="overlay" id="feat-edit-modal">
+  <div class="mbox">
+    <div class="auth-top">
+      <button class="mclose" onclick="document.getElementById('feat-edit-modal').classList.remove('open')">✕</button>
+      <div class="auth-logo">Modifier la <span>bannière</span></div>
+      <div class="auth-sub">Section coup de projecteur</div>
+    </div>
+    <div class="auth-body">
+      <div class="fg"><label>Titre</label><input type="text" id="feat-edit-title" placeholder="Les développeurs cachés d'ING1B"></div>
+      <div class="fg"><label>Contenu</label><textarea id="feat-edit-content" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:var(--sans);min-height:80px;resize:vertical" placeholder="Description..."></textarea></div>
+      <div class="fg"><label>Emoji ou image de fond</label>
+        <div class="uzone" onclick="document.getElementById('feat-img-input').click()">
+          <div class="uicon">🖼️</div><p>Clique pour uploader une image</p>
+          <input type="file" id="feat-img-input" accept="image/*" style="display:none" onchange="uploadFeatImage(this.files[0])">
+        </div>
+        <div id="feat-img-prev" style="display:none;margin-top:8px"><img id="feat-prev-img" src="" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px"></div>
+      </div>
+      <button class="bprimary" onclick="saveFeatSection()">Sauvegarder</button>
+    </div>
   </div>
 </div>
 
@@ -601,6 +629,7 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
   <div style="overflow:hidden;flex:1"><div class="ttrack" id="ticker-track"><span class="titem">Chargement...</span></div></div>
 </div>
 
+<div id="ptr-indicator" class="ptr-indicator"></div>
 <div id="app">
   <div class="page">
 
@@ -631,13 +660,16 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
     </div>
 
     <!-- FEATURED -->
-    <div class="featured mb28">
-      <div class="feat-img">💻</div>
+    <div class="featured mb28" id="featured-banner">
+      <div class="feat-img" id="feat-img-area">💻</div>
       <div class="feat-body">
-        <div class="feat-tag">Coup de projecteur · Talents</div>
-        <div class="feat-title">Les développeurs cachés d'ING1B</div>
-        <p class="feat-excerpt">Jeux en 3D, applications mobiles, sites web… certains de nos camarades codent bien au-delà des cours.</p>
-        <button class="hero-read" onclick="filterRub('talents',null)">Découvrir →</button>
+        <div class="feat-tag" id="feat-tag">Coup de projecteur · Talents</div>
+        <div class="feat-title" id="feat-title">Les développeurs cachés d'ING1B</div>
+        <p class="feat-excerpt" id="feat-excerpt">Jeux en 3D, applications mobiles, sites web… certains de nos camarades codent bien au-delà des cours.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="hero-read" onclick="filterRub('talents',null)">Découvrir →</button>
+          <button class="hero-read" id="feat-edit-btn" onclick="openFeatEdit()" style="display:none;background:rgba(0,0,0,.1);color:var(--noir);box-shadow:none">✏️ Modifier</button>
+        </div>
       </div>
     </div>
 
@@ -675,8 +707,17 @@ footer{background:linear-gradient(135deg,var(--b2),#011627);color:rgba(255,255,2
   <footer>
     <div class="ftop">
       <div><div class="flogo">ING1B<span>Mag</span></div><p class="fdesc">Le magazine officieux de la promotion ING1B à l'Institut Saint Jean Ingénieur de Yaoundé. Fait par les étudiants, pour les étudiants.</p></div>
-      <div class="fcol"><h4>Rubriques</h4><ul><li><a href="#">Cours & Projets</a></li><li><a href="#">Vie de classe</a></li><li><a href="#">Talents</a></li><li><a href="#">Sports & Loisirs</a></li></ul></div>
-      <div class="fcol"><h4>Magazine</h4><ul><li><a href="#">À propos</a></li><li><a href="#" onclick="openAuth()">Publier</a></li><li><a href="#">Archives</a></li></ul></div>
+      <div class="fcol"><h4>Rubriques</h4><ul>
+        <li><a href="#" onclick="filterRub('cours',null);document.getElementById('app').scrollTo({top:0,behavior:'smooth'})">Cours & Projets</a></li>
+        <li><a href="#" onclick="filterRub('vie',null);document.getElementById('app').scrollTo({top:0,behavior:'smooth'})">Vie de classe</a></li>
+        <li><a href="#" onclick="filterRub('talents',null);document.getElementById('app').scrollTo({top:0,behavior:'smooth'})">Talents</a></li>
+        <li><a href="#" onclick="filterRub('sport',null);document.getElementById('app').scrollTo({top:0,behavior:'smooth'})">Sports & Loisirs</a></li>
+      </ul></div>
+      <div class="fcol"><h4>Magazine</h4><ul>
+        <li><a href="#" onclick="scrollSec('equipe-sec')">À propos</a></li>
+        <li><a href="#" onclick="openAuth()">Publier</a></li>
+        <li><a href="#" onclick="scrollSec('agenda-sec')">Agenda</a></li>
+      </ul></div>
     </div>
     <div class="fbot"><span>© 2026 ING1B Mag — Institut Saint Jean Ingénieur, Yaoundé</span><span>VOL. 1 · Nº 4</span></div>
   </footer>
@@ -755,6 +796,9 @@ function renderAuthArea() {
     const edAv = document.getElementById('editor-av');
     if (edAv) edAv.innerHTML = '<img src="' + currentUser.avatar + '" style="width:100%;height:100%;object-fit:cover">';
   }
+  // Show featured edit button for admin
+  const featBtn = document.getElementById('feat-edit-btn');
+  if (featBtn) featBtn.style.display = currentUser.role === 'admin' ? 'inline-flex' : 'none';
 }
 async function loginEmail() {
   const btn = document.getElementById('login-btn'); btn.disabled=true; btn.textContent='...';
@@ -1419,13 +1463,100 @@ document.querySelectorAll('.overlay').forEach(o => {
   o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
 });
 
+/* FEATURED SECTION */
+let featCustomImg = null;
+
+async function loadFeatSection() {
+  try {
+    const data = await api('/section/featured_banner');
+    if (data) {
+      document.getElementById('feat-title').textContent = data.title || 'Les développeurs cachés d'ING1B';
+      document.getElementById('feat-excerpt').textContent = data.content || '';
+      if (data.image) {
+        const imgArea = document.getElementById('feat-img-area');
+        imgArea.innerHTML = '<img src="' + data.image + '" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">';
+        imgArea.style.position = 'relative';
+        imgArea.style.overflow = 'hidden';
+      }
+    }
+  } catch(e) {}
+}
+
+function openFeatEdit() {
+  document.getElementById('feat-edit-title').value = document.getElementById('feat-title').textContent;
+  document.getElementById('feat-edit-content').value = document.getElementById('feat-excerpt').textContent;
+  document.getElementById('feat-edit-modal').classList.add('open');
+}
+
+async function uploadFeatImage(file) {
+  if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    const d = await apiUpload('/upload', fd);
+    featCustomImg = d.url;
+    document.getElementById('feat-prev-img').src = d.url;
+    document.getElementById('feat-img-prev').style.display = 'block';
+    toast('Image uploadée !','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function saveFeatSection() {
+  const title = document.getElementById('feat-edit-title').value.trim();
+  const content = document.getElementById('feat-edit-content').value.trim();
+  try {
+    await api('/section/featured_banner', {method:'PUT', body:JSON.stringify({title, content, image: featCustomImg})});
+    document.getElementById('feat-title').textContent = title;
+    document.getElementById('feat-excerpt').textContent = content;
+    if (featCustomImg) {
+      const imgArea = document.getElementById('feat-img-area');
+      imgArea.innerHTML = '<img src="' + featCustomImg + '" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">';
+      imgArea.style.position = 'relative';
+      imgArea.style.overflow = 'hidden';
+    }
+    document.getElementById('feat-edit-modal').classList.remove('open');
+    toast('Bannière mise à jour !','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+/* PULL TO REFRESH */
+let ptrStart = 0, ptrActive = false;
+const appEl = () => document.getElementById('app');
+
+function initPullToRefresh() {
+  const app = appEl();
+  app.addEventListener('touchstart', (e) => {
+    if (app.scrollTop === 0) { ptrStart = e.touches[0].clientY; ptrActive = true; }
+  }, {passive: true});
+  app.addEventListener('touchmove', (e) => {
+    if (!ptrActive) return;
+    const dist = e.touches[0].clientY - ptrStart;
+    if (dist > 0 && dist < 80) {
+      const ptr = document.getElementById('ptr-indicator');
+      ptr.style.height = Math.min(dist, 60) + 'px';
+      ptr.innerHTML = dist > 50 ? '<div class="ptr-spin"></div><span>Relâche pour actualiser</span>' : '<span>↓ Tire pour actualiser</span>';
+    }
+  }, {passive: true});
+  app.addEventListener('touchend', (e) => {
+    if (!ptrActive) return;
+    ptrActive = false;
+    const dist = e.changedTouches[0].clientY - ptrStart;
+    const ptr = document.getElementById('ptr-indicator');
+    ptr.style.height = '0';
+    if (dist > 50) {
+      toast('Actualisation...', 'info');
+      loadRubriques(); loadArticles(); loadAgenda(); loadPoll(); loadFlash(); loadFeatSection();
+    }
+  });
+}
+
 /* INIT */
 window.addEventListener('load', () => {
   const t = localStorage.getItem('ing1b_token');
   const u = localStorage.getItem('ing1b_user');
   if (t && u) { currentToken=t; currentUser=JSON.parse(u); renderAuthArea(); }
   setTimeout(initGoogle, 1500);
-  loadRubriques(); loadArticles(); loadAgenda(); loadPoll(); loadFlash();
+  loadRubriques(); loadArticles(); loadAgenda(); loadPoll(); loadFlash(); loadFeatSection();
+  initPullToRefresh();
 });
 </script>
 </body>

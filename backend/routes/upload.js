@@ -2,6 +2,7 @@ const express = require('express');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const auth = require('../middleware/auth');
+const { query } = require('../database');
 
 const router = express.Router();
 
@@ -32,20 +33,13 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   const resourceType = getResourceType(req.file.mimetype);
   const folder = getFolder(req.file.mimetype);
   try {
-    const uploadOpts = {
-      resource_type: resourceType,
-      folder,
-      use_filename: true,
-      unique_filename: true,
-    };
-
     const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(uploadOpts,
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: resourceType, folder, use_filename: true, unique_filename: true },
         (error, result) => { if (error) reject(error); else resolve(result); }
       );
       stream.end(req.file.buffer);
     });
-
     res.json({
       url: result.secure_url,
       public_id: result.public_id,
@@ -71,8 +65,7 @@ router.post('/upload/avatar', auth, upload.single('file'), async (req, res) => {
       );
       stream.end(req.file.buffer);
     });
-    const db = require('../database');
-    db.run('UPDATE users SET avatar=? WHERE id=?', [result.secure_url, req.user.id]);
+    await query('UPDATE users SET avatar=$1 WHERE id=$2', [result.secure_url, req.user.id]);
     res.json({ url: result.secure_url });
   } catch(e) { res.status(500).json({ error: 'Erreur avatar : ' + e.message }); }
 });

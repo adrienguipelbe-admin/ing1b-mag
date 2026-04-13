@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const path    = require('path');
 
 const app = express();
 
@@ -10,8 +11,7 @@ app.use(cors({
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000',
-    'https://adrienguipelbe-admin.github.io',
-    'https://inge1b.netlify.app',
+    'https://ing1b-magazine.netlify.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
@@ -48,13 +48,6 @@ app.use((_, res) => res.status(404).json({ error: 'Route introuvable' }));
 // ── DÉMARRAGE ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log('');
-  console.log('  ██╗███╗   ██╗ ██████╗  ██╗██████╗     ███╗   ███╗ █████╗  ██████╗');
-  console.log('  ██║████╗  ██║██╔════╝ ███║██╔══██╗    ████╗ ████║██╔══██╗██╔════╝');
-  console.log('  ██║██╔██╗ ██║██║  ███╗╚██║██████╔╝    ██╔████╔██║███████║██║  ███╗');
-  console.log('  ██║██║╚██╗██║██║   ██║ ██║██╔══██╗    ██║╚██╔╝██║██╔══██║██║   ██║');
-  console.log('  ██║██║ ╚████║╚██████╔╝ ██║██████╔╝    ██║ ╚═╝ ██║██║  ██║╚██████╔╝');
-  console.log('  ╚═╝╚═╝  ╚═══╝ ╚═════╝  ╚═╝╚═════╝     ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝');
   console.log('');
   console.log(`  ✅  Backend démarré sur http://localhost:${PORT}`);
   console.log(`  📁  Base de données : ing1bmag.db`);
