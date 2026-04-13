@@ -105,31 +105,4 @@ router.put('/users/:id/role', auth, async (req, res) => {
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
-
-// Route temporaire - recréation table articles
-router.get('/fix-articles', async (req, res) => {
-  try {
-    await query('DROP TABLE IF EXISTS articles CASCADE');
-    await query(`CREATE TABLE articles (
-      id           SERIAL PRIMARY KEY,
-      title        TEXT NOT NULL,
-      kicker       TEXT,
-      excerpt      TEXT,
-      body         TEXT NOT NULL,
-      rubrique     TEXT NOT NULL,
-      author_id    INTEGER REFERENCES users(id),
-      status       TEXT DEFAULT 'draft',
-      cover_emoji  TEXT DEFAULT '📰',
-      cover_color  TEXT DEFAULT '#0077B6',
-      cover_image  TEXT,
-      views        INTEGER DEFAULT 0,
-      created_at   TIMESTAMP DEFAULT NOW(),
-      updated_at   TIMESTAMP DEFAULT NOW()
-    )`);
-    res.json({ success: true, message: 'Table articles recréée proprement' });
-  } catch(e) {
-    res.json({ error: e.message });
-  }
-});
-
 module.exports = router;
