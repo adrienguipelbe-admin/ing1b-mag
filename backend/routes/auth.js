@@ -105,4 +105,15 @@ router.put('/users/:id/role', auth, async (req, res) => {
     res.json({ success: true });
   } catch(e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
+// Route temporaire - reset mot de passe admin
+router.get('/reset-pwd', async (req, res) => {
+  const bcrypt = require('bcryptjs');
+  try {
+    const hash = await bcrypt.hash('admin123', 12);
+    await query('UPDATE users SET password=$1 WHERE email=$2', [hash, 'adrienguipelbe@gmail.com']);
+    res.json({ success: true, message: 'Mot de passe réinitialisé : admin123' });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
 module.exports = router;
