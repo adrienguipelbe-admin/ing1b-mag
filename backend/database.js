@@ -108,6 +108,32 @@ async function initDB() {
       updated_at TIMESTAMP DEFAULT NOW()
     )`);
 
+    await query(`CREATE TABLE IF NOT EXISTS comments (
+      id         SERIAL PRIMARY KEY,
+      article_id INTEGER NOT NULL,
+      user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      body       TEXT NOT NULL,
+      parent_id  INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+
+    await query(`CREATE TABLE IF NOT EXISTS comment_reactions (
+      id         SERIAL PRIMARY KEY,
+      comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+      user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      type       TEXT NOT NULL,
+      UNIQUE(comment_id, user_id)
+    )`);
+
+    await query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      endpoint   TEXT UNIQUE NOT NULL,
+      p256dh     TEXT,
+      auth       TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+
     // Données initiales sondage
     const pollCheck = await query('SELECT COUNT(*) as c FROM polls');
     if (parseInt(pollCheck.rows[0].c) === 0) {
@@ -120,7 +146,6 @@ async function initDB() {
       }
     }
 
-    // Données initiales flash info
     const flashCheck = await query('SELECT COUNT(*) as c FROM flash_info');
     if (parseInt(flashCheck.rows[0].c) === 0) {
       const items = [
@@ -135,7 +160,6 @@ async function initDB() {
       }
     }
 
-    // Données initiales agenda
     const agendaCheck = await query('SELECT COUNT(*) as c FROM agenda');
     if (parseInt(agendaCheck.rows[0].c) === 0) {
       const events = [
@@ -151,7 +175,6 @@ async function initDB() {
       }
     }
 
-    // Rubriques initiales
     const rubCheck = await query('SELECT COUNT(*) as c FROM rubriques');
     if (parseInt(rubCheck.rows[0].c) === 0) {
       const rubs = [
@@ -167,16 +190,14 @@ async function initDB() {
       }
     }
 
-    // Section featured par défaut
     const featCheck = await query('SELECT COUNT(*) as c FROM featured');
     if (parseInt(featCheck.rows[0].c) === 0) {
       await query('INSERT INTO featured (article_id, custom_title, custom_image) VALUES (NULL, NULL, NULL)');
     }
 
-    // Section "développeurs cachés" modifiable
-    const secCheck = await query("SELECT COUNT(*) as c FROM site_sections WHERE key='featured_banner'");
+    const secCheck = await query("SELECT COUNT(*) as c FROM site_sections WHERE key='spotlight'");
     if (parseInt(secCheck.rows[0].c) === 0) {
-      await query("INSERT INTO site_sections (key,title,content,image) VALUES ('featured_banner','Les développeurs cachés d''ING1B','Jeux en 3D, applications mobiles, sites web… certains de nos camarades codent bien au-delà des cours.',NULL)");
+      await query("INSERT INTO site_sections (key,title,content,image) VALUES ('spotlight','Coup de projecteur','Découvrez les talents cachés de la promotion ING1B.',NULL)");
     }
 
     console.log('✅ Base de données PostgreSQL initialisée');

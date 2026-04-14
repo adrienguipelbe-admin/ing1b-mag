@@ -138,7 +138,7 @@ router.delete('/rubriques/:id', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── SECTION BANNIÈRE MODIFIABLE ──────────────────────────────
+// ── SECTION MODIFIABLE ───────────────────────────────────────
 router.get('/section/:key', async (req, res) => {
   try {
     const result = await query('SELECT * FROM site_sections WHERE key=$1', [req.params.key]);
@@ -156,6 +156,93 @@ router.put('/section/:key', auth, async (req, res) => {
       [req.params.key, title, content, image||null]
     );
     res.json(result.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── COMMENTAIRES ─────────────────────────────────────────────
+router.get('/comments/:article_id', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT c.*, u.name as author_name, u.avatar as author_avatar,
+        (SELECT COUNT(*) FROM comment_reactions WHERE comment_id=c.id AND type='like') as likes,
+        (SELECT COUNT(*) FROM comment_reactions WHERE comment_id=c.id AND type='dislike') as dislikes
+      FROM comments c
+      LEFT JOIN users u ON c.user_id=u.id
+      WHERE c.article_id=$1
+      ORDER BY c.created_at ASC
+    `, [req.params.article_id]);
+    res.json(result.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/comments', auth, async (req, res) => {
+  const { article_id, body, parent_id } = req.body;
+  if (!article_id || !body || !body.trim()) return res.status(400).json({ error: 'Contenu requis' });
+  try {
+    const result = await query(
+      'INSERT INTO comments (article_id, user_id, body, parent_id) VALUES ($1,$2,$3,$4) RETURNING *',
+      [article_id, req.user.id, body.trim(), parent_id||null]
+    );
+    const full = await query(`
+      SELECT c.*, u.name as author_name, u.avatar as author_avatar, 0 as likes, 0 as dislikes
+      FROM comments c LEFT JOIN users u ON c.user_id=u.id WHERE c.id=$1
+    `, [result.rows[0].id]);
+    res.status(201).json(full.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/comments/:id', auth, async (req, res) => {
+  try {
+    const c = await query('SELECT * FROM comments WHERE id=$1', [req.params.id]);
+    if (!c.rows[0]) return res.status(404).json({ error: 'Commentaire introuvable' });
+    if (req.user.role !== 'admin' && c.rows[0].user_id !== req.user.id)
+      return res.status(403).json({ error: 'Accès refusé' });
+    await query('DELETE FROM comments WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/comments/:id/react', auth, async (req, res) => {
+  const { type } = req.body; // 'like' or 'dislike'
+  if (!['like','dislike'].includes(type)) return res.status(400).json({ error: 'Type invalide' });
+  try {
+    const existing = await query('SELECT * FROM comment_reactions WHERE comment_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    if (existing.rows[0]) {
+      if (existing.rows[0].type === type) {
+        await query('DELETE FROM comment_reactions WHERE comment_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+      } else {
+        await query('UPDATE comment_reactions SET type=$1 WHERE comment_id=$2 AND user_id=$3', [type, req.params.id, req.user.id]);
+      }
+    } else {
+      await query('INSERT INTO comment_reactions (comment_id, user_id, type) VALUES ($1,$2,$3)', [req.params.id, req.user.id, type]);
+    }
+    const likes = await query("SELECT COUNT(*) as c FROM comment_reactions WHERE comment_id=$1 AND type='like'", [req.params.id]);
+    const dislikes = await query("SELECT COUNT(*) as c FROM comment_reactions WHERE comment_id=$1 AND type='dislike'", [req.params.id]);
+    res.json({ likes: parseInt(likes.rows[0].c), dislikes: parseInt(dislikes.rows[0].c) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── NOTIFICATIONS PUSH ───────────────────────────────────────
+router.post('/push/subscribe', auth, async (req, res) => {
+  const { endpoint, keys } = req.body;
+  if (!endpoint) return res.status(400).json({ error: 'Endpoint requis' });
+  try {
+    await query(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (endpoint) DO UPDATE SET p256dh=$3, auth=$4, user_id=$1`,
+      [req.user.id, endpoint, keys?.p256dh||'', keys?.auth||'']
+    );
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/push/notify', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Accès refusé' });
+  const { title, body, url } = req.body;
+  try {
+    const subs = await query('SELECT * FROM push_subscriptions');
+    res.json({ success: true, sent: subs.rows.length, message: 'Notification enregistrée' });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
